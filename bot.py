@@ -7,13 +7,16 @@ from aiogram.contrib.fsm_storage.redis import RedisStorage2
 
 from tgBot.config import load_config
 from tgBot.filters.admin import AdminFilter
+from tgBot.handlers.admin import register_admin
 from tgBot.handlers.echo import register_echo
+from tgBot.middlewares.envmiddleware import EnvironmentMiddleware
 
 logger = logging.getLogger(__name__)
 
 
-def register_all_middlewares(dp):
-    dp.setup_middleware(...)
+def register_all_middlewares(dp, config):
+    dp.setup_middleware(EnvironmentMiddleware(config=config))
+    pass
 
 
 def register_all_filters(dp):
@@ -21,6 +24,7 @@ def register_all_filters(dp):
 
 
 def register_all_handlers(dp):
+    register_admin(dp)
     register_echo(dp)
 
 
@@ -30,14 +34,15 @@ async def main():
         format=u"%(filename)s:%(lineno)d #%(levelname)-8s [%(asctime)s] - %(name)s - %(message)s",
 
     )
+    logger.info("Starting bot")
     config = load_config(".env")
 
     bot = Bot(token=config.tg_bot.token, parse_mode="HTML")
     storage = RedisStorage2() if config.tg_bot.use_redis else MemoryStorage()
     dp = Dispatcher(bot, storage=storage)
-    bot["config"] = config
+    # bot["config"] = config
 
-    register_all_middlewares(dp)
+    register_all_middlewares(dp, config)
     register_all_filters(dp)
     register_all_handlers(dp)
 
@@ -54,3 +59,4 @@ if __name__ == "__main__":
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
         logger.error("Bot stopped!")
+
